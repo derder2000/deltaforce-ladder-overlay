@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delta Force Ladder Overlay — 設定 / Settings</title>
+<style>
+  :root {
+    --green: #0ff796;
+    --green-dim: #16d184;
+    --bg: #0b1214;
+    --panel: #131d20;
+    --panel2: #1a2629;
+    --line: #2a393d;
+    --text: #e8eeee;
+    --muted: #8fa0a3;
+    --danger: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  header h1 { font-size: 17px; margin: 0; }
+  header h1 span { color: var(--green); }
+  .langswitch button { background: none; border: 1px solid var(--line); color: var(--muted); padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+  .langswitch button.on { color: var(--bg); background: var(--green); border-color: var(--green); }
+
+  main { display: grid; grid-template-columns: minmax(340px, 460px) 1fr; gap: 20px; padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  section h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--green); margin: 0 0 12px; }
+
+  .field { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .field > label { color: var(--muted); }
+  .hint { grid-column: 2; color: var(--muted); font-size: 12px; margin-top: -6px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 7px 9px; font: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--green-dim); outline-offset: -1px; }
+  input[type=range] { width: 100%; accent-color: var(--green); }
+  input[type=checkbox] { accent-color: var(--green); width: 16px; height: 16px; }
+  input[type=color] { width: 44px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .checks label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg label { padding: 5px 12px; cursor: pointer; color: var(--muted); }
+  .seg input { display: none; }
+  .seg input:checked + span { color: var(--bg); }
+  .seg label:has(input:checked) { background: var(--green); color: var(--bg); }
+  .swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+  .btn {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+    padding: 7px 14px; cursor: pointer; font: inherit;
+  }
+  .btn:hover { border-color: var(--green-dim); }
+  .btn.primary { background: var(--green); color: #06110c; border-color: var(--green); font-weight: 700; }
+  .btn.small { padding: 3px 9px; font-size: 12px; }
+  details summary { cursor: pointer; color: var(--muted); margin-bottom: 10px; }
+
+  .preview-wrap { position: sticky; top: 16px; }
+  .stage {
+    height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line);
+    background: linear-gradient(135deg, #2d3b33, #5d6d62);
+  }
+  .stage.light { background: linear-gradient(135deg, #c9d3cf, #f1f4f2); }
+  .stage.checker { background: repeating-conic-gradient(#3a3a3a 0 25%, #2a2a2a 0 50%) 0 0 / 20px 20px; }
+  .stage iframe { width: 100%; height: 100%; border: 0; background: transparent; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .toolbar .label { color: var(--muted); font-size: 12px; }
+  #liveBtn {
+    margin-left: auto; padding: 9px 28px; font-size: 15px; font-weight: 700;
+    color: var(--green); border: 2px solid var(--green); background: transparent;
+  }
+  #liveBtn:hover { background: rgba(15, 247, 150, .12); }
+  #liveBtn.on { background: var(--green); color: #06110c; }
+
+  textarea#out { height: 300px; font: 12px/1.45 Consolas, "Cascadia Mono", monospace; white-space: pre; resize: vertical; }
+  .steps { margin: 0 0 12px; padding-left: 20px; color: var(--muted); }
+  .steps b { color: var(--text); }
+  .toast { color: var(--green); font-size: 13px; min-height: 1.4em; }
+  .toast.err { color: var(--danger); }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>Delta Force</span> Streamer Ladder Overlay — <span data-i18n="pageTitle">設定產生器</span></h1>
+  <div class="langswitch">
+    <button data-ui="zh" class="on">中文</button>
+    <button data-ui="en">English</button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= 左：表單 ================= -->
+  <div>
+    <section>
+      <h2 data-i18n="secBasic">基本</h2>
+      <div class="field">
+        <label for="player" data-i18n="player">實況主</label>
+        <input id="player" type="text" value="" spellcheck="false">
+      </div>
+      <div class="hint" data-i18n="playerHint" style="margin:-4px 0 10px 140px">暱稱（大小寫不拘）或玩家 ID</div>
+      <div class="field">
+        <label for="language" data-i18n="language">顯示語言</label>
+        <select id="language"></select>
+      </div>
+      <div class="field">
+        <label for="interval" data-i18n="interval">更新頻率</label>
+        <select id="interval">
+          <option value="30">30 s</option>
+          <option value="60">1 min</option>
+          <option value="120">2 min</option>
+          <option value="300" selected>5 min</option>
+          <option value="600">10 min</option>
+        </select>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="secLayout">外觀</h2>
+      <div class="field">
+        <label data-i18n="align">位置</label>
+        <div class="seg">
+          <label><input type="radio" name="align" value="left"><span data-i18n="left">靠左</span></label>
+          <label><input type="radio" name="align" value="center" checked><span data-i18n="center">置中</span></label>
+          <label><input type="radio" name="align" value="right"><span data-i18n="right">靠右</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="scale" data-i18n="scale">縮放</label>
+        <div class="row"><input id="scale" type="range" min="0.5" max="2" step="0.05" value="1" style="flex:1"><span id="scaleVal" style="width:44px;text-align:right">1.00</span></div>
+      </div>
+      <div class="hint" id="scaleHint" style="margin:-4px 0 10px 140px"></div>
+      <div class="field">
+        <label for="title" data-i18n="title">標題</label>
+        <input id="title" type="text" value="">
+      </div>
+      <div class="hint" data-i18n="titleHint" style="margin:-4px 0 10px 140px">留空 = 依顯示語言使用官網的活動名稱</div>
+      <div class="checks" style="margin-top:6px">
+        <label><input id="background" type="checkbox" checked><span data-i18n="background">深色底</span></label>
+        <label><input id="showAvatar" type="checkbox" checked><span data-i18n="showAvatar">頭像</span></label>
+        <label><input id="showRegion" type="checkbox" checked><span data-i18n="showRegion">地區排名</span></label>
+        <label><input id="showGaps" type="checkbox" checked><span data-i18n="showGaps">前後名差距</span></label>
+        <label><input id="showStats" type="checkbox" checked><span data-i18n="showStats">擊殺 / 場次 / 帶出價值</span></label>
+        <label><input id="topEffects" type="checkbox" checked><span data-i18n="topEffects">前三名特效</span></label>
+      </div>
+    </section>
+
+
+    <section>
+      <details open>
+        <summary data-i18n="secText">自訂文字（留空 = 使用內建翻譯）</summary>
+        <div id="textFields"></div>
+      </details>
+    </section>
+  </div>
+
+  <!-- ================= 右：預覽 + 輸出 ================= -->
+  <div>
+    <div class="preview-wrap">
+      <section>
+        <h2 data-i18n="secPreview">預覽</h2>
+        <div class="toolbar">
+          <span class="label" data-i18n="previewData">示範名次</span>
+          <div class="seg">
+            <label><input type="radio" name="pmode" value="1"><span>#1</span></label>
+            <label><input type="radio" name="pmode" value="2"><span>#2</span></label>
+            <label><input type="radio" name="pmode" value="3"><span>#3</span></label>
+            <label><input type="radio" name="pmode" value="25" checked><span data-i18n="normalRank">一般</span></label>
+          </div>
+          <span class="label" data-i18n="previewBg">背景</span>
+          <div class="seg">
+            <label><input type="radio" name="pbg" value="" checked><span data-i18n="bgGame">深</span></label>
+            <label><input type="radio" name="pbg" value="light"><span data-i18n="bgLight">淺</span></label>
+            <label><input type="radio" name="pbg" value="checker"><span data-i18n="bgChecker">透明格</span></label>
+          </div>
+          <button class="btn" id="liveBtn" type="button" data-i18n="liveBtn">測試</button>
+        </div>
+        <div class="stage" id="stage"><iframe id="preview" title="preview"></iframe></div>
+        <div class="hint" style="margin:8px 0 0" data-i18n="liveHint">「一般」是第 4 名以後的樣子。按「測試」會連上官網，用排行榜的實際資料預覽，確認實況主名字有沒有打對；點左邊的名次就回到示範資料。</div>
+      </section>
+
+      <section>
+        <h2 data-i18n="secOutput">產生的 config.js</h2>
+        <ol class="steps" id="steps"></ol>
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn primary" id="download" data-i18n="download">下載 config.js</button>
+          <button class="btn" id="copy" data-i18n="copy">複製全部</button>
+          <label class="btn" style="margin-left:auto"><span data-i18n="import">匯入現有 config.js</span><input id="importFile" type="file" accept=".js,text/javascript" hidden></label>
+        </div>
+        <div class="toast" id="toast"></div>
+        <textarea id="out" readonly spellcheck="false"></textarea>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  // ---------- 選項 ----------
+  const LANGS = [
+    ['auto', '自動 / Auto'], ['zh-TW', '繁體中文'], ['zh-CN', '简体中文'], ['en', 'English'], ['ja', '日本語'],
+    ['ko', '한국어'], ['vi', 'Tiếng Việt'], ['th', 'ไทย'], ['id', 'Bahasa Indonesia'], ['ms', 'Bahasa Melayu'],
+    ['es', 'Español'], ['pt', 'Português'], ['fr', 'Français'], ['de', 'Deutsch'], ['ru', 'Русский'],
+    ['tr', 'Türkçe'], ['ar', 'العربية'],
+  ];
+  const TEXT_KEYS = ['rating', 'regionRank', 'above', 'below', 'first', 'kills', 'matches', 'value'];
+
+  // ---------- 本頁介面文字（中 / 英） ----------
+  const UI = {
+    zh: {
+      pageTitle: '設定產生器', secBasic: '基本', player: '實況主', playerHint: '暱稱（大小寫不拘）或玩家 ID', playerPh: '輸入要追蹤的實況主遊戲暱稱', normalRank: '一般',
+      language: '顯示語言', interval: '更新頻率', secLayout: '外觀', align: '位置', left: '靠左', center: '置中', right: '靠右',
+      scale: '縮放', scaleHint: '建議 OBS 來源大小：{w} × {h}', title: '標題', titleHint: '留空 = 依顯示語言使用官網的活動名稱', background: '深色底', showAvatar: '頭像', showRegion: '地區排名', showGaps: '前後名差距',
+      showStats: '擊殺 / 場次 / 帶出價值', topEffects: '前三名特效', secText: '自訂文字（留空 = 使用內建翻譯）', secPreview: '預覽', previewData: '示範名次', liveBtn: '測試',
+      previewBg: '背景', bgGame: '深', bgLight: '淺', bgChecker: '透明格',
+      liveHint: '「一般」是第 4 名以後的樣子。按「測試」會連上官網，用排行榜的實際資料預覽，確認實況主名字有沒有打對；點左邊的名次就回到示範資料。',
+      secOutput: '產生的 config.js', download: '下載 config.js', copy: '複製全部', import: '匯入現有 config.js',
+      steps: [
+        '按「<b>下載 config.js</b>」，用下載的檔案<b>取代</b> overlay 資料夾裡的 <code>config.js</code>（檔名如果變成 <code>config (1).js</code>，請改回 <code>config.js</code>）',
+        '或按「<b>複製全部</b>」，打開原本的 <code>config.js</code>，<b>全選後貼上取代</b>，再存檔',
+        '最慢一個更新週期後自動套用；想馬上看到就在來源上按右鍵 →「重新整理」',
+      ],
+      copied: '已複製，貼到 config.js 取代全部內容後存檔即可。', downloaded: '已下載，用它取代資料夾裡的 config.js（檔名必須是 config.js）。',
+      imported: '已匯入現有設定。', importFail: '讀不懂這個檔案，請確認是本工具的 config.js。',
+      textLabels: { rating: '分數標籤', regionRank: '地區排名', above: '落後前一名', below: '領先後一名', first: '第一名時', kills: '擊殺', matches: '場次', value: '帶出價值' },
+      textHints: { rating: '例：評分', regionRank: '例：{region} 第 {r} 名（{region} = 地區）', above: '例：落後 #{r}（{r} = 名次）', below: '例：領先 #{r}', first: '例：👑 全球第一',
+                   kills: '例：擊殺', matches: '例：場次', value: '例：帶出價值' },
+    },
+    en: {
+      pageTitle: 'Config Generator', secBasic: 'Basics', player: 'Streamer', playerHint: 'Nickname (case-insensitive) or player ID', playerPh: 'In-game nickname of the streamer to track', normalRank: 'Other',
+      language: 'Language', interval: 'Refresh every', secLayout: 'Layout', align: 'Position', left: 'Left', center: 'Center', right: 'Right',
+      scale: 'Scale', scaleHint: 'Recommended OBS source size: {w} × {h}', title: 'Title', titleHint: 'Leave empty to use the official event name for the display language', background: 'Dark card', showAvatar: 'Avatar', showRegion: 'Regional rank', showGaps: 'Point gaps',
+      showStats: 'Kills / matches / value', topEffects: 'Top-3 effects', secText: 'Custom labels (leave empty to use built-in translations)', secPreview: 'Preview', previewData: 'Demo rank', liveBtn: 'Test',
+      previewBg: 'Background', bgGame: 'Dark', bgLight: 'Light', bgChecker: 'Checker',
+      liveHint: '"Other" shows how ranks 4 and below look. "Test" connects to the official site and previews with real ladder data, so you can check the streamer name. Click a rank on the left to go back to demo data.',
+      secOutput: 'Generated config.js', download: 'Download config.js', copy: 'Copy all', import: 'Import existing config.js',
+      steps: [
+        'Click <b>Download config.js</b> and <b>replace</b> the <code>config.js</code> in the overlay folder with it (if it was saved as <code>config (1).js</code>, rename it to <code>config.js</code>)',
+        'Or click <b>Copy all</b>, open your <code>config.js</code>, <b>select all, paste over it</b>, and save',
+        'It applies on the next refresh; to see it right away, right-click the source → Refresh',
+      ],
+      copied: 'Copied. Paste it over everything in config.js and save.', downloaded: 'Downloaded. Replace the config.js in your overlay folder with it (the file must be named config.js).',
+      imported: 'Existing settings imported.', importFail: "Couldn't read that file. Make sure it's this overlay's config.js.",
+      textLabels: { rating: 'Rating label', regionRank: 'Regional rank', above: 'Behind (above)', below: 'Ahead (below)', first: 'When #1', kills: 'Kills', matches: 'Matches', value: 'Extracted value' },
+      textHints: { rating: 'e.g. RATING', regionRank: 'e.g. {region} #{r} ({region} = region)', above: 'e.g. To #{r} ({r} = rank)', below: 'e.g. Ahead of #{r}', first: 'e.g. 👑 Global #1',
+                   kills: 'e.g. Kills', matches: 'e.g. Matches', value: 'e.g. Extracted' },
+    },
+  };
+  let ui = 'zh';
+
+  const $ = id => document.getElementById(id);
+  const $$ = sel => [...document.querySelectorAll(sel)];
+
+  // 語言選單、自訂文字欄位
+  $('language').innerHTML = LANGS.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+  $('language').value = 'zh-TW';
+  $('textFields').innerHTML = TEXT_KEYS.map(k =>
+    `<div class="field"><label for="t_${k}" id="tl_${k}">${k}</label><input id="t_${k}" type="text" data-textkey="${k}"></div>`).join('');
+
+  // ---------- 讀表單 → 設定物件 ----------
+  function readForm() {
+    const text = {};
+    for (const k of TEXT_KEYS) { const v = $('t_' + k).value; if (v.trim()) text[k] = v; }
+    return {
+      language: $('language').value,
+      player: $('player').value.trim(),
+      interval: Number($('interval').value),
+      align: (document.querySelector('input[name=align]:checked') || {}).value || 'center',
+      scale: Math.round(Number($('scale').value) * 100) / 100,
+      background: $('background').checked,
+      showAvatar: $('showAvatar').checked,
+      showStats: $('showStats').checked,
+      showGaps: $('showGaps').checked,
+      showRegion: $('showRegion').checked,
+      topEffects: $('topEffects').checked,
+      title: $('title').value,
+      text,
+    };
+  }
+
+  // overlay.html 的內建預設值：config.js 沒寫到的設定，overlay 會用這些
+  const OVERLAY_DEFAULTS = {
+    language: 'auto', player: '', interval: 60, align: 'center', scale: 1,
+    background: true, showAvatar: true, showStats: true, showGaps: true, showRegion: true, topEffects: true,
+    title: '', text: {},
+  };
+  // 官網左上角各語系的活動名稱（標題留空時的預覽提示用）
+  const OFFICIAL_TITLES = {"zh-TW": "三角洲行動主播天梯賽 S2", "zh-CN": "三角洲行动主播排行榜", "en": "Delta Force Streamer Ladder S2", "ja": "Delta Force ストリーマーラダー S2", "ko": "Delta Force 스트리머 래더 S2", "vi": "Delta Force: Bảng Xếp Hạng Streamer S2", "th": "Delta Force: อันดับสตรีมเมอร์ S2", "id": "Delta Force: Peringkat Streamer S2", "ms": "Delta Force: Kedudukan Streamer S2", "es": "Delta Force: Liga de Streamers T2", "pt": "Ranking de Streamers do Delta Force: Temporada 2", "fr": "Delta Force : Ladder des Streamers S2", "de": "Delta Force Streamer-Rangliste S2", "ru": "Delta Force: Рейтинг стримеров S2", "tr": "Delta Force Yayıncı Sıralaması S2", "ar": "Delta Force: ترتيب البثّاثين S2"};
+  function updateTitlePlaceholder() {
+    const l = $('language').value;
+    const nav = (navigator.language || 'en').toLowerCase();
+    const autoLang = nav.startsWith('zh') ? (/tw|hk|mo|hant/.test(nav) ? 'zh-TW' : 'zh-CN') : nav.split('-')[0];
+    $('title').placeholder = OFFICIAL_TITLES[l === 'auto' ? autoLang : l] || OFFICIAL_TITLES.en;
+  }
+
+  // ---------- 設定物件 → 表單（匯入用） ----------
+  function fillForm(c) {
+    if (typeof c.player === 'string') $('player').value = c.player;
+    if (LANGS.some(([v]) => v === c.language)) $('language').value = c.language;
+    if (c.interval != null) {
+      const n = Math.max(30, Number(c.interval) || 300);
+      if (![...$('interval').options].some(o => Number(o.value) === n)) $('interval').add(new Option(n + ' s', n));
+      $('interval').value = String(n);
+    }
+    if (['left', 'center', 'right'].includes(c.align)) document.querySelector(`input[name=align][value=${c.align}]`).checked = true;
+    if (c.scale != null && Number(c.scale)) $('scale').value = Number(c.scale);
+    for (const k of ['background', 'showAvatar', 'showStats', 'showGaps', 'showRegion', 'topEffects']) if (typeof c[k] === 'boolean') $(k).checked = c[k];
+    if (typeof c.title === 'string') $('title').value = c.title.trim() === 'Streamer Ladder S2' ? '' : c.title;
+    const tx = (c.text && typeof c.text === 'object') ? c.text : {};
+    for (const k of TEXT_KEYS) $('t_' + k).value = typeof tx[k] === 'string' ? tx[k] : '';
+  }
+
+  // ---------- 產生 config.js（所有值都用 JSON.stringify，不會產生可執行的內容） ----------
+  const J = v => JSON.stringify(v);
+  function generate(c) {
+    const textLines = Object.entries(c.text).map(([k, v]) => `    ${k}: ${J(v)},`).join('\n');
+    return `// ============================================================
+//  Delta Force Streamer Ladder S2 — OBS Overlay 設定檔 / Settings
+//  由 settings.html 產生 / Generated by settings.html
+//  改設定建議用 settings.html 重新產生 / Prefer regenerating this file with settings.html
+//  ⚠ 這個檔案會被當成程式執行，請只用自己產生的版本，不要用別人傳來的 config.js
+//  ⚠ This file runs as code. Only use one you generated; never use a config.js someone sends you
+// ============================================================
+window.OVERLAY_CONFIG = {
+
+  // 顯示語言 / Display language ("auto", "zh-TW", "zh-CN", "en", "ja", "ko", "vi", "th",
+  //   "id", "ms", "es", "pt", "fr", "de", "ru", "tr", "ar")
+  language: ${J(c.language)},
+
+  // 要追蹤的實況主：暱稱或玩家 ID / Streamer to track: nickname or player ID
+  player: ${J(c.player)},
+
+  // 幾秒更新一次（最少 30）/ Refresh interval in seconds (minimum 30)
+  interval: ${J(c.interval)},
+
+  // 位置 / Position: "left" | "center" | "right"
+  align: ${J(c.align)},
+
+  // 縮放 / Scale
+  scale: ${J(c.scale)},
+
+  // 深色底 / Dark card background
+  background: ${J(c.background)},
+
+  // 顯示頭像 / Show avatar
+  showAvatar: ${J(c.showAvatar)},
+
+  // 顯示擊殺 / 場次 / 帶出價值 / Show kills / matches / extracted value
+  showStats: ${J(c.showStats)},
+
+  // 顯示前後名差距 / Show point gaps
+  showGaps: ${J(c.showGaps)},
+
+  // 顯示地區排名 / Show regional rank
+  showRegion: ${J(c.showRegion)},
+
+  // 前三名特效 / Top-3 effects
+  topEffects: ${J(c.topEffects)},
+
+  // 標題（空的 = 依語言顯示官網的活動名稱）/ Title (empty = official event name for the language)
+  title: ${J(c.title)},
+
+  // 自訂文字（空的 = 內建翻譯）/ Custom labels (empty = built-in translations)
+  text: {${textLines ? '\n' + textLines + '\n  ' : ''}},
+
+};
+`;
+  }
+
+  // ---------- 匯入：把 config.js 轉成 JSON 解析（不執行檔案內容） ----------
+  function stripComments(src) {
+    let out = '', i = 0, q = null;
+    while (i < src.length) {
+      const c = src[i], n = src[i + 1];
+      if (q) {
+        out += c;
+        if (c === '\\') { out += n ?? ''; i += 2; continue; }
+        if (c === q) q = null;
+        i++; continue;
+      }
+      if (c === '"' || c === "'") { q = c; out += c; i++; continue; }
+      if (c === '/' && n === '/') { while (i < src.length && src[i] !== '\n') i++; continue; }
+      if (c === '/' && n === '*') { i = src.indexOf('*/', i + 2); i = i < 0 ? src.length : i + 2; continue; }
+      out += c; i++;
+    }
+    return out;
+  }
+  // 逐字掃描，把 JS 物件寫法轉成 JSON：
+  //   - 文字內容（單引號或雙引號）原封不動保留，不會被誤判
+  //   - 沒加引號的設定名稱補上引號
+  //   - 拿掉結尾多餘的逗號
+  function jsObjectToJson(s) {
+    let out = '', i = 0;
+    const nextNonSpace = j => { while (j < s.length && /\s/.test(s[j])) j++; return s[j]; };
+    while (i < s.length) {
+      const c = s[i];
+      if (c === '"' || c === "'") {
+        let j = i + 1, body = '';
+        while (j < s.length && s[j] !== c) {
+          if (s[j] === '\\') { body += s[j] + (s[j + 1] ?? ''); j += 2; continue; }
+          body += s[j]; j++;
+        }
+        if (j >= s.length) throw new Error('unterminated string');
+        if (c === "'") {
+          // 單引號字串轉成雙引號：\' 變成 '，裡面的 " 要加上跳脫
+          let conv = '';
+          for (let k = 0; k < body.length; k++) {
+            const ch = body[k];
+            if (ch === '\\') { const nx = body[k + 1] ?? ''; conv += nx === "'" ? "'" : ch + nx; k++; }
+            else if (ch === '"') conv += '\\"';
+            else conv += ch;
+          }
+          body = conv;
+        }
+        out += '"' + body + '"';
+        i = j + 1; continue;
+      }
+      if (/[A-Za-z_$]/.test(c)) {
+        let j = i; while (j < s.length && /[\w$]/.test(s[j])) j++;
+        const word = s.slice(i, j);
+        out += nextNonSpace(j) === ':' ? '"' + word + '"' : word;
+        i = j; continue;
+      }
+      if (c === ',' && /[}\]]/.test(nextNonSpace(i + 1) || '')) { i++; continue; }
+      out += c; i++;
+    }
+    return out;
+  }
+  function parseConfigJs(src) {
+    const s = stripComments(src);
+    const a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a < 0 || b <= a) throw new Error('no object');
+    return JSON.parse(jsObjectToJson(s.slice(a, b + 1)));
+  }
+
+  // ---------- 更新畫面 ----------
+  let previewTimer = 0;
+  let previewMode = '25';   // '1' | '2' | '3' | '25'（一般名次）= 示範資料；'live' = 連官網
+  function refresh() {
+    updateTitlePlaceholder();
+    const c = readForm();
+    $('scaleVal').textContent = c.scale.toFixed(2);
+    // 放大時 OBS 來源框也要跟著變大，不然卡片邊緣會被切掉
+    $('scaleHint').textContent = UI[ui].scaleHint.replace('{w}', Math.ceil(420 * Math.max(1, c.scale))).replace('{h}', Math.ceil(240 * Math.max(1, c.scale)));
+    $('out').value = generate(c);
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => {
+      const mode = previewMode;
+      const params = new URLSearchParams({ cfg: JSON.stringify(c) });
+      if (mode !== 'live') params.set('demo', mode);
+      $('preview').src = 'overlay.html?' + params.toString();
+    }, 250);
+  }
+
+  function toast(msg, err) { const t = $('toast'); t.textContent = msg; t.className = 'toast' + (err ? ' err' : ''); }
+
+  function applyUi() {
+    const L = UI[ui];
+    document.documentElement.lang = ui === 'zh' ? 'zh-Hant' : 'en';
+    $$('[data-i18n]').forEach(el => { const v = L[el.dataset.i18n]; if (typeof v === 'string') el.textContent = v; });
+    $('steps').innerHTML = L.steps.map(s => `<li>${s}</li>`).join('');
+    $('player').placeholder = L.playerPh;
+    for (const k of TEXT_KEYS) { $('t_' + k).placeholder = L.textHints[k]; $('tl_' + k).textContent = L.textLabels[k]; }
+    $$('.langswitch button').forEach(b => b.classList.toggle('on', b.dataset.ui === ui));
+    toast('');
+    refresh();
+  }
+
+  // ---------- 事件 ----------
+  document.addEventListener('input', e => { if (e.target.closest('main') && e.target.id !== 'importFile') refresh(); });
+  document.addEventListener('change', e => {
+    if (e.target.name === 'pbg') { $('stage').className = 'stage ' + e.target.value; return; }
+    if (e.target.name === 'pmode') { previewMode = e.target.value; $('liveBtn').classList.remove('on'); }
+    if (e.target.closest('main') && e.target.id !== 'importFile') refresh();
+  });
+  $('liveBtn').addEventListener('click', () => {
+    previewMode = 'live';
+    $$('input[name=pmode]').forEach(r => { r.checked = false; });
+    $('liveBtn').classList.add('on');
+    refresh();
+  });
+  $$('.langswitch button').forEach(b => b.addEventListener('click', () => { ui = b.dataset.ui; applyUi(); }));
+
+  $('copy').addEventListener('click', async () => {
+    const text = $('out').value;
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { $('out').select(); document.execCommand('copy'); }
+    toast(UI[ui].copied);
+  });
+
+  $('download').addEventListener('click', () => {
+    const blob = new Blob([$('out').value], { type: 'text/javascript;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'config.js';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast(UI[ui].downloaded);
+  });
+
+  $('importFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    try {
+      const parsed = parseConfigJs(await f.text());
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
+      // 先回到 overlay 的預設值，再套用檔案內容：檔案沒寫的設定 = overlay 實際會用的預設值
+      fillForm({ ...OVERLAY_DEFAULTS, ...parsed });
+      refresh();
+      toast(UI[ui].imported);
+    } catch (err) {
+      console.error(err);
+      toast(UI[ui].importFail, true);
+    }
+  });
+
+  applyUi();
+  refresh();
+})();
+</script>
+</body>
+</html>
